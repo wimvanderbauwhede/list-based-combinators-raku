@@ -187,8 +187,9 @@ our sub semi (--> LComb) {
 # As in Parsec, parses a literal and removes trailing whitespace
 our sub symbol (Str $lit_str --> LComb) {
     my $lit_str_ = $lit_str;
+
     #$lit_str_ ~~ s:g/$<nw> = [ \W ] /\\$<nw>/;
-    say $lit_str_;
+    # say $lit_str_;
     Comb[ sub (Str $str --> MTup) {
         if (
                 $str ~~ m/^\s*$lit_str_\s* $<r> = [.*]/ 
@@ -196,8 +197,8 @@ our sub symbol (Str $lit_str --> LComb) {
             my $matches=Array[Matches](Match[$lit_str_].new);
             my $str_ = ~$<r>; 
 	    my $st=1; 
-	    say $str_.raku;
-	    say $matches.raku;
+	    # say $str_.raku;
+	    # say $matches.raku;
             MTup[1,$str_, $matches].new;
         } else {
             MTup[0,$str, undef-match].new; 
@@ -503,22 +504,22 @@ multi sub apply(Seq[ Array ] $ps, Str $str --> MTup) is export {
 
 
 sub _remove_undefined_values(Array[Matches] \ms --> Array[Matches]) {
-	say '_remove_undefined_values ms:',ms.raku;
+	# say '_remove_undefined_values ms:',ms.raku;
     my \res  = grep {!($_ ~~ UndefinedMatch)}, |ms ;
 	my  \ms_ = Array[Matches].new(res);	
     # in 	
-	say '_remove_undefined_values ms_:',ms_.raku;
+	# say '_remove_undefined_values ms_:',ms_.raku;
     my \tms_res = map {my \m =$_; 
-	say m.raku;
+	# say m.raku;
 		if (m ~~ Match) {
 				m;
 		} elsif (m ~~ TaggedMatch) {
 				TaggedMatch[ m.tag ,_remove_undefined_values (m.matches)].new;
 		}
 	}, |ms_;
-	say 'tms_res:',tms_res.raku;
+	# say 'tms_res:',tms_res.raku;
 	my \tms = Array[Matches].new(tms_res);
-	say 'tms:',tms.raku;
+	# say 'tms:',tms.raku;
 	tms;
 }
 # ms:Array[Matches].new(
@@ -559,9 +560,15 @@ role TaggedEntry {}
 role Val[Str @v] does TaggedEntry {
 	has Str @.val=@v;
 } 
-role ValMap [ Hash \vm] does TaggedEntry { #String \k, TaggedEntry \te,
-	has %.valmap = vm; 
+# role ValMap [ Hash \vm] does TaggedEntry { #String \k, TaggedEntry \te,
+# 	has %.valmap = vm; 
+# }
+role ValMap [  @vm] does TaggedEntry { #String \k, TaggedEntry \te,
+	has @.valmap = @vm; 
 }
+
+
+
 
 # A list of TaggedMatch must be translated into a Map of TaggedEntry's
 # Array[Matches].new(
@@ -585,13 +592,18 @@ sub _tagged_matches_to_map(Array[Matches] \ms --> TaggedEntry) {
 			Val[ Array[Str].new(map {$_.match}, |ms)].new;
 		} else  {
 			ValMap[ 
-				reduce  sub (\hm, \tm) {
-					# say 'TM:',tm.raku;
-					my \t = tm.tag;
-					my \ms__ = tm.matches;
-					hm{ t } =  _tagged_matches_to_map( ms__) ;
-					hm;
-					}, %(), |ms_
+				# reduce  sub (\hm, \tm) {
+				# 	# say 'TM:',tm.raku;
+				# 	my \t = tm.tag;
+				# 	my \ms__ = tm.matches;
+				# 	hm{ t } =  _tagged_matches_to_map( ms__) ;
+				# 	hm;
+				# 	}, %(), |ms_
+				map {
+					my \t = $_.tag;
+					my \ms__ = $_.matches;
+					[t ,  _tagged_matches_to_map( ms__)]
+				} , |ms_
 				].new;
 		}
 }
@@ -620,6 +632,6 @@ sub getParseTree (\ms) is export {
         if (ms3 ~~ ValMap) {
 				ms3.valmap;
 			} else {
-				%();
+				@();
 			}            
 }

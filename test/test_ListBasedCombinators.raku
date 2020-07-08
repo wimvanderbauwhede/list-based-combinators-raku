@@ -79,8 +79,36 @@ say $resh1.raku;
 my (\tpst,\tpstr,\tpms) = unmtup apply( type_parser, type_str);# $resh2;   
 say 'Matches: ',tpms;
 # apply (sepBy (symbol "=>") word) "Int => Bool => String"    
-# apply (sequence [oneOf "aeiou", word]) "aTest"    
+# apply (sequence(oneOf "aeiou", word]) "aTest"    
 #    let
-#        MTup (st,str,ms) = apply (sequence [word, symbol "=", word,parens word]) "answer = hello(world)"  
+#        MTup (st,str,ms) = apply (sequence(word, symbol "=", word,parens word]) "answer = hello(world)"  
 # (st,str,ms)        
 say getParseTree( tpms);
+
+
+my \term_str = "a*x^2+ 4*b*x +c";
+
+my \term_parser =  Tag[ "Add", sequence(
+            Tag[ "Mult", sequence(
+                Tag[ "Par", word].new,
+                symbol( "*"),
+                Tag[ "Pow" , sequence(
+                    Tag[  "Var", word].new,
+                    symbol( "^"),
+                    Tag[ "Const", natural].new
+                )].new
+            )].new,
+            symbol( "+"),
+            Tag[ "Mult", sequence(
+                Tag[ "Const", natural].new,
+                symbol( "*"),
+                Tag[ "Par", word].new,
+                symbol( "*"),
+                Tag[ "Var", word].new
+            )].new,     
+            symbol( "+"),       
+            Tag[ "Par", word].new
+      )].new;
+
+my (\tpst2,\tpstr2,\tpms2) = unmtup apply( term_parser, term_str);       
+say getParseTree( tpms2);
