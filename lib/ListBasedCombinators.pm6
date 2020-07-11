@@ -563,6 +563,7 @@ role Val[Str @v] does TaggedEntry {
 # role ValMap [ Hash \vm] does TaggedEntry { #String \k, TaggedEntry \te,
 # 	has %.valmap = vm; 
 # }
+# valmap :: [(String,TaggedEntry)]
 role ValMap [  @vm] does TaggedEntry { #String \k, TaggedEntry \te,
 	has @.valmap = @vm; 
 }

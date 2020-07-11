@@ -111,4 +111,44 @@ my \term_parser =  Tag[ "Add", sequence(
       )].new;
 
 my (\tpst2,\tpstr2,\tpms2) = unmtup apply( term_parser, term_str);       
-say getParseTree( tpms2);
+say "\nParse Tree for Term expression:\n";
+say taggedEntryToTerm(getParseTree( tpms2).head);
+
+
+#  Now let's try something like a*x^2+b*x+c
+role Term {}
+role Var [Str \v] does Term {
+    has Str $.var = v;
+}
+role Par [Str \p] does Term {
+    has Str $.par = p;
+}
+role Const [Int \c] does Term {
+    has Int $.const = c;
+}
+role Pow [Term \t, Int \n] does Term {
+    has Term $.term = t;
+    has Int $.exp = n;
+}
+role Add [Array[Term] \ts] does Term {
+    has Array[Term] $.terms = ts;
+}
+role Mult [Array[Term] \ts] does Term {
+    has Array[Term] $.terms = ts;
+}
+
+multi sub taggedEntryToTerm (["Var", TaggedEntry \val_strs]) { Var[ val_strs.val.head].new }
+multi sub taggedEntryToTerm (["Par", TaggedEntry \par_strs]) { Par[par_strs.val.head].new }
+multi sub taggedEntryToTerm (["Const", TaggedEntry \const_strs]) {Const[ Int(const_strs.val.head)].new } 
+multi sub taggedEntryToTerm (["Pow", TaggedEntry \pow_strs]) {
+  my (\vt, \et)   = pow_strs.valmap;
+  Pow[ taggedEntryToTerm(vt), Int(et.[1].val)].new
+}        
+multi sub taggedEntryToTerm (["Add", TaggedEntry \hmap]) { 
+  my \res = map {taggedEntryToTerm($_)}, |hmap.valmap;
+  Add[ Array[Term].new(res)].new
+}
+multi sub taggedEntryToTerm (["Mult", TaggedEntry \hmap]) {  
+  my \res = map {taggedEntryToTerm($_)}, |hmap.valmap;
+  Mult[ Array[Term].new(res)].new
+}
