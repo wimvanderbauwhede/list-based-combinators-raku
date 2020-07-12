@@ -31,15 +31,21 @@ role MTup {...}
 multi sub apply(LComb, Str --> MTup) {...}
 
 ## Roles as algebraic datatypes
+
 # Matches
 role Matches {}
 role Match[Str $str] does Matches {
     has Str $.match=$str;
 } 
-role TaggedMatch[Str $tag, Array[Matches] \ms] does Matches {
-    has Str $.tag = $tag;
+role TaggedMatch[ \tag, Array[Matches] \ms] does Matches {
+    has $.tag = tag;
     has Matches @.matches = ms;
-} 
+}
+# role TaggedMatch[Str $tag, Array[Matches] \ms] does Matches {
+#     has Str $.tag = $tag;
+#     has Matches @.matches = ms;
+# } 
+
 role UndefinedMatch does Matches {}
 # convenience
 sub undef-match {
@@ -51,6 +57,36 @@ sub empty-match {
 	#return $em;
 	Array[Matches].new;
 }
+# This function is for use in functions used as tags 
+# to convert the Match tree into an AST
+
+
+# This is for tagging with functions [Match a] -> a instead of strings 
+# The Haskell type is
+# data Match a = Match String | TaggedMatch ([Match a] -> a) (Match a) | UndefinedMatch
+# We can't really do this with Raku roles, because e.g. Match and UndefinedMatch don't take the type variable 
+# and in Raku they'd have to
+# I couldn't specify ([Match a] -> a) anyway, the closest I get is Sub but then that excludes the use of pointy blocks.
+# So instead I just remove the type of tag in TaggedMatch.
+
+# getTaggedMatches :: [Match a] -> [a]
+our sub getTaggedMatches( Array[Matches] \ms ){
+        my \tms = grep {isTaggedMatch($_)}, |ms;       
+	# say "TMS: "~tms.raku;		                         
+		my \res = map {
+			# say "HERE map : " ~ $_.raku;
+			my \mkT = $_.tag;
+			my \m = $_.matches;
+			# say "HERE m: " ~ m.raku;
+			mkT.(m);
+		}, |tms;
+		Array.new(res);
+}
+
+multi sub isTaggedMatch(TaggedMatch) { True }
+multi sub isTaggedMatch(Match) { False }
+multi sub isTaggedMatch(UndefinedMatch) { False }
+
 
 # Tuple to return (status, remaining string, matches)
 role MTup[Int $st,Str $rest,Array[Matches] $ms] {
@@ -87,8 +123,8 @@ role Seq[LComb @combs] does LComb {
 role Comb[Sub $comb] does LComb {
     has Sub $.comb = $comb;
 }
-role Tag[Str $tag,LComb $comb] does LComb {
-    has Str $.tag = $tag;
+role Tag[ $tag,LComb $comb] does LComb {
+    has $.tag = $tag;
     has LComb $.comb = $comb; 
 } 
 
@@ -486,13 +522,13 @@ sub whiteSpace (--> LComb) is export {
 multi sub apply(Comb[ Sub ] $p, Str $str --> MTup) is export {
 	($p.comb)($str);
 }
-multi sub apply(Tag[ Str, LComb ] $t, Str $str --> MTup) is export {
+multi sub apply(Tag[ Any, LComb ] $t, Str $str --> MTup) is export {
 	my MTup $res = apply($t.comb,$str); 
 	my $status=$res.status;
 	my $str2=$res.rest;
 	my Array[Matches] \mms = $res.matches;
 
-	my Str $tag = $t.tag;
+	my Any $tag = $t.tag;
 	my $tm = TaggedMatch[$tag,mms].new;
 	my Matches @tms = ($tm);
 	MTup[$status,$str2,@tms].new;
