@@ -68,25 +68,22 @@ sub empty-match {
 # and in Raku they'd have to
 # I couldn't specify ([Match a] -> a) anyway, the closest I get is Sub but then that excludes the use of pointy blocks.
 # So instead I just remove the type of tag in TaggedMatch.
+# But I add the type as argument to the function to have a correctly typed return value
+# The type for the tagging function is Array[Matches] --> T which is as good as it gets 
 
 # getTaggedMatches :: [Match a] -> [a]
-our sub getTaggedMatches( Array[Matches] \ms ){
-        my \tms = grep {isTaggedMatch($_)}, |ms;       
-	# say "TMS: "~tms.raku;		                         
-		my \res = map {
-			# say "HERE map : " ~ $_.raku;
+our sub getTaggedMatches( \T, Array[Matches] \ms ){
+	# Keep only the tagged matches
+	my \tms = grep {$_ ~~ TaggedMatch}, |ms;       
+	# Apply the function to the match into a type T
+	my \res = map {
 			my \mkT = $_.tag;
 			my \m = $_.matches;
-			# say "HERE m: " ~ m.raku;
 			mkT.(m);
-		}, |tms;
-		Array.new(res);
+	}, |tms;
+	# Return the correct type 
+	Array[T].new(res);
 }
-
-multi sub isTaggedMatch(TaggedMatch) { True }
-multi sub isTaggedMatch(Match) { False }
-multi sub isTaggedMatch(UndefinedMatch) { False }
-
 
 # Tuple to return (status, remaining string, matches)
 role MTup[Int $st,Str $rest,Array[Matches] $ms] {

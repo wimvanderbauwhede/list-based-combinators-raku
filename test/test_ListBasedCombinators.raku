@@ -153,75 +153,45 @@ multi sub taggedEntryToTerm (["Mult", TaggedEntry \hmap]) {
   Mult[ Array[Term].new(res)].new
 }
 
-# mkConst :: [Match a] -> a
-
-sub mkVar( \m) {
-  
-  Var[
-  m.head.match
-].new
+my \mkVar = sub (Array[Matches] \m --> Term) { Var[ m.head.match ].new }
+my \mkPar = sub ( \m) {  Par[ m.head.match ].new }
+my \mkConst = sub ( \m) { Const[ Int(m.head.match) ].new }
+my \mkPow = sub ( \ms) {
+  my (\vt,\et) = getTaggedMatches(Term, ms);
+  Pow[ vt, et.const ].new
 }
-
-sub mkPar( \m) { 
-  # say "mkPar: " ~ m.raku;
-  Par[
-  m.head.match
-].new
+my \mkAdd = sub (\ms) {
+  Add[ getTaggedMatches(Term, ms) ].new;
 }
-
-sub mkConst( \m) { Const[
-  Int(m.head.match)
-].new
-}
-
-# mkPow :: [Match a] -> a 
-sub mkPow( \ms) {
-  # say "mkPow: " ~ms.raku;
-   my (\vt,\et) = getTaggedMatches( ms);
-  #  say "ET: "~ et.raku;
-    Pow[ vt, et.const ].new
-}
-
-# mkAdd :: [Match a] -> a "
-sub mkAdd(\ms) {
-  # say "mkAdd: "~ ms.raku;
-  my Array[Term] \res =  Array[Term].new( getTaggedMatches(ms) );
-  #  say "mkAdd res: " ~res.raku;  
-  Add[ res ].new
-  # Add[ getTaggedMatches(ms) ].new
-}
-
-sub mkMult(\ms) {
-  # say "mkMult: " ~ms.raku;
-  my Array[Term] \res =  Array[Term].new( getTaggedMatches(ms) );
-  #  say "mkMult res: " ~res.raku;  
-  Mult[ res ].new
+my \mkMult = sub (\ms) {
+  Mult[ getTaggedMatches(Term, ms) ].new
 }
 
 
-my \term_parser_new =  Tag[ &mkAdd, sequence(
-            Tag[ &mkMult, sequence(
-                Tag[ &mkPar, word].new,
+my \term_parser_new =  Tag[ mkAdd, sequence(
+            Tag[ mkMult, sequence(
+                Tag[ mkPar, word].new,
                 symbol( "*"),
-                Tag[ &mkPow , sequence(
-                    Tag[  &mkVar, word].new,
+                Tag[ mkPow , sequence(
+                    Tag[  mkVar, word].new,
                     symbol( "^"),
-                    Tag[ &mkConst, natural].new
+                    Tag[ mkConst, natural].new
                 )].new
             )].new,
             symbol( "+"),
-            Tag[ &mkMult, sequence(
-                Tag[ &mkConst, natural].new,
+            Tag[ mkMult, sequence(
+                Tag[ mkConst, natural].new,
                 symbol( "*"),
-                Tag[ &mkPar, word].new,
+                Tag[ mkPar, word].new,
                 symbol( "*"),
-                Tag[ &mkVar, word].new
+                Tag[ mkVar, word].new
             )].new,     
             symbol( "+"),       
-            Tag[ &mkPar, word].new
+            Tag[ mkPar, word].new
       )].new;
 
-my (\tpst2n,\tpstr2n,\tpms2n) = unmtup apply( term_parser_new, term_str);       
+my (\tpst2n,\tpstr2n,\tpms2n) = unmtup apply( term_parser_new, term_str);     
+
 say "\nParse Tree for Term expression:\n";
-# say tpms2n.raku;
-say getTaggedMatches( tpms2n);
+# say tpms2n.raku
+say getTaggedMatches( Term, tpms2n).head;
